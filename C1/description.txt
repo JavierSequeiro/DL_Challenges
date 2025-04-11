@@ -1,1 +1,4 @@
 Hello World!
+
+In this first Challenge I developed a multiclass image classificator on the Scenes15 Dataset.
+For that I will train several CNNs and test them out.
