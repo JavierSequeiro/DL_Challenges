@@ -16,8 +16,8 @@ def test_fn(model, test_loader, cfg):
         for j, (images, labels) in enumerate(test_loader):
             images, labels = images.to(cfg.device).float(), labels.to(cfg.device)
             
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+            outputs_ = model(images)
+            loss = criterion(outputs_, labels)
 
             outputs = torch.argmax(outputs, dim=1)
             all_metrics = compute_metrics(outputs, labels, num_classes=cfg.num_classes)
@@ -25,7 +25,7 @@ def test_fn(model, test_loader, cfg):
             for met in test_metrics:
                 test_metrics[met] += all_metrics[met]
 
-            conf_mat = compute_confusion_matrix(outputs, labels, cfg.num_classes)
+            conf_mat = compute_confusion_matrix(outputs_, labels, cfg.num_classes)
             confusion_matrix_overall += conf_mat
 
         print_confusion_matrix(confusion_matrix_overall)
