@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 class ConvBLock(nn.Module):
 
-    def __init__(self, in_feat, out_feat, k_size, stride=1,padding=True, pool=False,act=nn.ReLU()):
+    def __init__(self, in_feat, out_feat, k_size, stride=1, padding=True, pool=False, pooling_layer=nn.MaxPool2d(kernel_size=2), act=nn.ReLU()):
         super(ConvBLock, self).__init__()
         pad_cond = 1 if padding else 0
         # if padding:
@@ -14,11 +14,11 @@ class ConvBLock(nn.Module):
         # else:
         #     pad_cond = 0
         
-        self.conv1  = nn.Conv2D(in_feat, out_feat, k_size, stride, padding=1)
-        self.bn1 = nn.BatchNorm2D(out_feat)
+        self.conv1  = nn.Conv2d(in_feat, out_feat, k_size, stride, padding=pad_cond)
+        self.bn1 = nn.BatchNorm2d(out_feat)
         # self.act = nn.ReLU() if act=="relu" else nn.LeakyReLU(negative_slope=0.01)
         self.act=act
-        self.pool = nn.MaxPool2d(kernel_size=2) if pool else nn.Identity()
+        self.pool = pooling_layer if pool else nn.Identity()
 
     def forward(self,x):
         x = self.conv1(x)
@@ -30,7 +30,7 @@ class ConvBLock(nn.Module):
     
 class Classifier(nn.Module):
     def __init__(self,in_feat, out_feat, act=nn.ReLU()):
-        super(Classifier, self).__init()
+        super(Classifier, self).__init__()
         self.fc1= nn.Linear(in_feat, out_feat)
 
     def forward(self,x):
@@ -39,10 +39,10 @@ class Classifier(nn.Module):
 class CNN1(nn.Module):
     def __init__(self):
         super(CNN1,self).__init__()
-        self.conv1 = ConvBLock(in_feat=1, out_feat=32, k_size=3,padding=1, act=nn.ReLU(), pool=True)
+        self.conv1 = ConvBLock(in_feat=3, out_feat=32, k_size=3,padding=1, act=nn.ReLU(), pool=True)
         self.conv2 = ConvBLock(in_feat=32, out_feat=64, k_size=3,padding=1, act=nn.ReLU(), pool=True)
         self.conv3 = ConvBLock(in_feat=64, out_feat=128, k_size=3,padding=1, act=nn.ReLU(), pool=True)
-        self.conv4 = ConvBLock(in_feat=128, out_feat=256, k_size=3,padding=1, act=nn.AdaptiveAvgPool2d(1), pool=True)
+        self.conv4 = ConvBLock(in_feat=128, out_feat=256, k_size=3,padding=1, act=nn.ReLU(), pool=True, pooling_layer=nn.AdaptiveAvgPool2d((1,1)))
         self.fc = Classifier(in_feat=256, out_feat=15)
 
     def forward(self,x):
@@ -50,6 +50,7 @@ class CNN1(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
+        x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
 
