@@ -56,7 +56,7 @@ def train_fn(train_loader, val_loader, cfg):
                 loss = criterion(outputs, labels)
 
                 outputs = torch.argmax(outputs, dim=1)
-                all_metrics = compute_metrics(outputs, labels)
+                all_metrics = compute_metrics(outputs, labels, num_classes=cfg.num_classes)
 
                 for met in val_metrics:
                     val_metrics[met] += all_metrics[met]
