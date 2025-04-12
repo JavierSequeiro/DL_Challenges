@@ -12,8 +12,8 @@ from test_ import test_fn
 # from .train import *
 # from .test import * 
 
-data_path = "./DL_Challenges/C1/data/15-Scene"
-# data_path = "./data/15-Scene"
+# data_path = "./DL_Challenges/C1/data/15-Scene"
+data_path = "./data/15-Scene"
 cfg = Config()
 scene_dict = {0:"bedroom",
               1:"suburb",
