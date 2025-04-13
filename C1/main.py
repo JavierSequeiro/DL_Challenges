@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # from .utils.config import Config
 from utils.config import Config
 from train import train_fn
-from test_ import test_fn 
+from test_ import test_fn, test_fn_with_tta
 # from .train import *
 # from .test import * 
 
@@ -66,6 +66,10 @@ model, train_loss, val_loss, train_metrics, val_metrics = train_fn(train_loader=
 
 # Test the model
 test_metrics = test_fn(model=model,
+                       test_loader=test_loader,
+                       cfg=cfg)
+
+test_metrics_tta = test_fn_with_tta(model=model,
                        test_loader=test_loader,
                        cfg=cfg)
 
