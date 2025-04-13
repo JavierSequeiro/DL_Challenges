@@ -9,12 +9,14 @@ import matplotlib.pyplot as plt
 from utils.config import Config
 from train import train_fn
 from test_ import test_fn, test_fn_with_tta
+from utils.xAI import gradcam
 # from .train import *
 # from .test import * 
 
-# data_path = "./DL_Challenges/C1/data/15-Scene"
-data_path = "./data/15-Scene" # Data Folder
+data_path = "./DL_Challenges/C1/data/15-Scene"
+# data_path = "./data/15-Scene" # Data Folder
 cfg = Config() # Experiment Config
+print(f'Device: {cfg.device}')
 
 scene_dict = {0:"bedroom",
               1:"suburb",
@@ -34,7 +36,7 @@ scene_dict = {0:"bedroom",
 
 print(sorted(os.listdir(data_path)))
 im_transform = transforms.Compose([
-    transforms.Resize((128,128)),
+    transforms.Resize((224,224)),
     transforms.ToTensor(),
 ])
 
@@ -65,6 +67,7 @@ model, train_loss, val_loss, train_metrics, val_metrics = train_fn(train_loader=
                                                                    cfg=cfg)
 
 # Test the model
+print("Entering Testing Phase...")
 test_metrics = test_fn(model=model,
                        test_loader=test_loader,
                        cfg=cfg)
@@ -72,6 +75,11 @@ test_metrics = test_fn(model=model,
 test_metrics_tta = test_fn_with_tta(model=model,
                        test_loader=test_loader,
                        cfg=cfg)
+
+gradcam(model=model,
+        test_loader=test_loader,
+        classes_names=scene_dict,
+        cfg=cfg)
 
 # Plotting if needed
 

@@ -15,7 +15,7 @@ def train_fn(train_loader, val_loader, cfg):
 
     for epoch in range(cfg.num_epochs):
         epoch_train_loss, epoch_val_loss = 0.0, 0.0
-        print(f"Epoch {epoch}/{cfg.num_epochs}")
+        print(f"Epoch {epoch+1}/{cfg.num_epochs}")
         model.train()
 
         train_metrics = {"accuracy":0.0,

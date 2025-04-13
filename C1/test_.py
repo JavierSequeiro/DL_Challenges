@@ -54,11 +54,11 @@ def test_fn_with_tta(model, test_loader, cfg):
             images, labels = images.to(cfg.device).float(), labels.to(cfg.device)
             augmented_imgs = [images, TF.hflip(images), TF.rotate(images, 10)]
 
-            combined_logits = [torch.stack([model(img_aug) for img_aug in augmented_imgs])]
+            combined_logits = torch.stack([model(img_aug) for img_aug in augmented_imgs])
             # outputs_logits = model(images)
             avg_logits = torch.mean(combined_logits, dim=0)
             outputs = torch.argmax(avg_logits, dim=1)
-            
+
             all_metrics = compute_metrics(outputs, labels, num_classes=cfg.num_classes)
 
             for met in test_metrics:
