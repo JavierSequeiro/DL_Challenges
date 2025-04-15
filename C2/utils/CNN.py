@@ -1,27 +1,22 @@
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import Dataset
 
-class ConvBLock(nn.Module):
+class ConvBlock(nn.Module):
 
-    def __init__(self, in_feat, out_feat, k_size, stride=1, padding=True, pool=False, batch_norm=True, pooling_layer=nn.MaxPool2d(kernel_size=2), act=nn.ReLU()):
-        super(ConvBLock, self).__init__()
+    def __init__(self, in_feat, out_feat, k_size, stride=1, padding=True, pool=False, batch_norm=True, pooling_layer=nn.MaxPool2d(kernel_size=2), act=nn.ReLU(inplace=True)):
+        super(ConvBlock, self).__init__()
         pad_cond = 1 if padding else 0
-        # if padding:
-        #     pad_cond = 1
-        # else:
-        #     pad_cond = 0
         
         self.conv1  = nn.Conv2d(in_feat, out_feat, k_size, stride, padding=pad_cond)
         self.bn1 = nn.BatchNorm2d(out_feat) if batch_norm else nn.Identity()
-        # self.act = nn.ReLU() if act=="relu" else nn.LeakyReLU(negative_slope=0.01)
         self.act=act
         self.pool = pooling_layer if pool else nn.Identity()
 
     def forward(self,x):
-        x_ini = x
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.act(x)
@@ -29,30 +24,71 @@ class ConvBLock(nn.Module):
 
         return x
     
-class Classifier(nn.Module):
-    def __init__(self,in_feat, out_feat, act=nn.ReLU()):
-        super(Classifier, self).__init__()
-        self.fc1= nn.Linear(in_feat, out_feat)
+class UpSampleBlock(nn.Module):
+    def __init__(self, in_feat, out_feat, k_size, stride=1):
+        super(UpSampleBlock, self).__init__()
+        self.up=nn.ConvTranspose2d(in_channels=in_feat, out_channels=out_feat,kernel_size=k_size, stride=stride)
+        self.conv = nn.Sequential(ConvBlock(in_feat, out_feat, k_size),
+                                  ConvBlock(out_feat, out_feat, k_size))
+        
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
 
-    def forward(self,x):
-        return self.fc1(x)
+        # Adjust Sizes
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+        x1 = F.pad(x1, [diffX//2, diffX - diffX//2,
+                        diffY//2, diffY - diffY//2])
+        
+        x = torch.cat([x2, x1], dim=1) # Skip Connection
+        return self.conv(x)
     
-class CNN1(nn.Module):
+
+class DownSampleBlock(nn.Module):
+    def __init__(self, in_feat, out_feat):
+        super(DownSampleBlock, self).__init__()
+        self.conv = nn.Sequential(ConvBlock(in_feat, out_feat, k_size=3, stride=1, padding=True, pool=False),
+                                  ConvBlock(out_feat, out_feat, k_size=3, padding=True, pool=True))
+        
+
+    def forward(self, x):
+        return self.conv(x)
+    
+# class Classifier(nn.Module):
+#     def __init__(self,in_feat, out_feat, act=nn.ReLU()):
+#         super(Classifier, self).__init__()
+#         self.fc1= nn.Linear(in_feat, out_feat)
+
+#     def forward(self,x):
+#         return self.fc1(x)
+    
+class UNet1(nn.Module):
     def __init__(self):
-        super(CNN1,self).__init__()
-        self.conv1 = ConvBLock(in_feat=3, out_feat=32, k_size=3,padding=1, act=nn.ReLU(), pool=True)
-        self.conv2 = ConvBLock(in_feat=32, out_feat=64, k_size=3,padding=1, act=nn.ReLU(), pool=True)
-        self.conv3 = ConvBLock(in_feat=64, out_feat=128, k_size=3,padding=1, act=nn.ReLU(), pool=True)
-        self.conv4 = ConvBLock(in_feat=128, out_feat=256, k_size=3,padding=1, act=nn.ReLU(), pool=True, pooling_layer=nn.AdaptiveAvgPool2d((1,1)))
-        self.fc = Classifier(in_feat=256, out_feat=15)
+        super(UNet1,self).__init__()
+        self.d1 = nn.Sequential(ConvBlock(in_feat=1, out_feat=64, k_size=3), 
+                                ConvBlock(in_feat=64, out_feat=64, k_size=3)) #512
+        self.d2 = DownSampleBlock(in_feat=64, out_feat=128) #256
+        self.d3 = DownSampleBlock(in_feat=128, out_feat=256) #128
+        self.d4 = DownSampleBlock(in_feat=256, out_feat=512) #64
+        self.d5 = DownSampleBlock(in_feat=512, out_feat=1024) #32
+        self.up1 = UpSampleBlock(in_feat=1024,out_feat=512, k_size=3, stride=1) #64
+        self.up2 = UpSampleBlock(in_feat=512,out_feat=256, k_size=3, stride=1)# 128
+        self.up3 = UpSampleBlock(in_feat=256,out_feat=128, k_size=3, stride=1) #256
+        self.up4 = UpSampleBlock(in_feat=128,out_feat=64, k_size=3, stride=1) #512
+        self.out = nn.Sequential(nn.Conv2d(64,1,kernel_size=1),
+                                 nn.Sigmoid())
 
     def forward(self,x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        x1 = self.d1(x)
+        x2 = self.d2(x1)
+        x3 = self.d3(x2)
+        x4 = self.d4(x3)
+        x5 = self.d5(x4)
+        x = self.up1(x5, x4)
+        x = self.up2(x, x3)
+        x = self.up3(x, x2)
+        x = self.up4(x, x1)
+        x = self.out(x)
         return x
 
 

@@ -22,60 +22,35 @@ class Metrics():
     def f1score(self):
         return f1_score(self.target, self.pred, average="macro", zero_division=0)
     
-    def confusion_matrix_(self):
-    #     # _, preds = torch.max(outputs, 1)  # Shape: (B,)
+    def dice_coeff(self):
+        epsilon = 1e-6
+
+        sum_dim = (-1, -2) if self.pred.dim() == 2 else (-1, -2, -3)
+
+        inter = 2 * (self.pred * self.target).sum(dim=sum_dim)
+        sets_sum = self.pred.sum(dim=sum_dim) + self.target.sum(dim=sum_dim)
+        sets_sum = torch.where(sets_sum == 0, inter, sets_sum)
+
+        dice = (inter + epsilon) / (sets_sum + epsilon)
+        return dice.mean()
     
-    #     # Initialize confusion matrix
-    #     confusion_matrix = torch.zeros(self.num_classes, self.num_classes, dtype=torch.int64)
-        
-    #     # Populate confusion matrix
-    #     for t, p in zip(self.target.view(-1), self.preds.view(-1)):
-    #         confusion_matrix[t.long(), p.long()] += 1
-
-    #     self.print_confusion_matrix(confusion_matrix)
-        
-    #     return confusion_matrix
-
-
-    # def print_confusion_matrix(self, confusion_matrix):
-    #     # Print confusion matrix in a readable format
-    #     print("Confusion Matrix:")
-    #     for row in confusion_matrix:
-    #         print("\t".join(str(x.item()) for x in row))
-        return confusion_matrix(self.target, self.pred)
-
-
-def compute_confusion_matrix(outputs, labels, num_classes):
-    # Get predicted class labels from outputs
-    _, preds = torch.max(outputs, 1)  # Shape: (B,)
-    
-    # Initialize confusion matrix
-    confusion_matrix = torch.zeros(num_classes, num_classes, dtype=torch.int64)
-    
-    # Populate confusion matrix
-    for t, p in zip(labels.view(-1), preds.view(-1)):
-        confusion_matrix[t.long(), p.long()] += 1
-    
-    return confusion_matrix
-
-def print_confusion_matrix(confusion_matrix):
-        # Print confusion matrix in a readable format
-        print("Confusion Matrix:")
-        for row in confusion_matrix:
-            print("\t".join(str(x.item()) for x in row))
+    def IoU(self):
+        epsilon = 1e-6
+        intersection = (self.pred * self.target).sum(dim=(1,2))
+        union = (self.pred + self.target - self.pred*self.target).sum(dim=(1,2))
+        iou = (intersection + epsilon)/(union + epsilon)
+        return iou
 
 def compute_metrics(preds, targets, num_classes):
 
     preds, targets = preds.cpu().numpy(), targets.cpu().numpy()
     metrics = Metrics(y_pred=preds, y_target=targets, num_classes=num_classes)
-    acc = metrics.accuracy()
-    precision = metrics.precision()
-    recall = metrics.recall()
-    f1score = metrics.f1score()
-    conf_matrix = metrics.confusion_matrix_()
-
-    return {"accuracy": acc,
-            "precision": precision,
-            "recall":recall,
-            "f1 score":f1score,
-            "confusion matrix":conf_matrix}
+    # acc = metrics.accuracy()
+    # precision = metrics.precision()
+    # recall = metrics.recall()
+    # f1score = metrics.f1score()
+    # conf_matrix = metrics.confusion_matrix_()
+    dice = metrics.dice_coeff()
+    iou = metrics.IoU()
+    return {"dice": dice,
+            "iou": iou}
