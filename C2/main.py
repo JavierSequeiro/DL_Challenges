@@ -18,13 +18,13 @@ import cv2
 cfg = Config() # Experiment Config
 print(f'Device: {cfg.device}')
 
-root_path = "./DL_Challenges/C2/data/Montgomery/MontgomerySet"
-# root_path = "./data/Montgomery/MontgomerySet"
+# root_path = "./DL_Challenges/C2/data/Montgomery/MontgomerySet"
+root_path = "./data/Montgomery/MontgomerySet"
 dataprocessor = DataProcessor(root_path=root_path)
 
 img_folder = "CXR_png"
 mask_folder = "ManualMask"
-resolution = (512,512)
+resolution = (256,256)
 
 imgs = dataprocessor.image_processor(img_folder=img_folder,
                                      img_resolution=resolution)

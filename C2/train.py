@@ -12,6 +12,7 @@ def train_fn(train_loader, val_loader, cfg):
     optimizer, criterion = cfg.optimizer, cfg.loss
     ovall_train_loss = []
     ovall_val_loss = []
+    th = cfg.threshold
 
     for epoch in range(cfg.num_epochs):
         epoch_train_loss, epoch_val_loss = 0.0, 0.0
@@ -25,13 +26,14 @@ def train_fn(train_loader, val_loader, cfg):
 
             optimizer.zero_grad()
             outputs = model(images)
-            
 
             loss = criterion(outputs, labels) 
             loss.backward()
             optimizer.step()
 
-            outputs = torch.argmax(outputs, dim=1)
+            # outputs = torch.argmax(outputs, dim=1)
+            labels = (labels >th).float()
+            outputs = (outputs >th).float()
 
             all_metrics = compute_metrics(outputs, labels, num_classes=cfg.num_classes)
             for met in train_metrics:
@@ -51,7 +53,9 @@ def train_fn(train_loader, val_loader, cfg):
                 outputs = model(images)
                 loss = criterion(outputs, labels)
 
-                outputs = torch.argmax(outputs, dim=1)
+                # outputs = torch.argmax(outputs, dim=1)
+                labels = (labels >th).float()
+                outputs = (outputs >th).float()
                 all_metrics = compute_metrics(outputs, labels, num_classes=cfg.num_classes)
 
                 for met in val_metrics:

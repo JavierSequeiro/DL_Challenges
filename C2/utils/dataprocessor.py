@@ -15,7 +15,7 @@ class DataProcessor():
 
     def image_processor(self, img_folder, img_resolution):
         imgs_path = os.path.join(self.root_path, img_folder)
-        imgs_dirs = sorted(os.listdir(imgs_path)[:16])
+        imgs_dirs = sorted(os.listdir(imgs_path)[:100])
         print(imgs_dirs)
         # Load Image --> Convert to RGB --> Convert to PIL Image
         # imgs = [Image.fromarray(cv2.cvtColor(cv2.imread(os.path.join(imgs_path,img_dir), cv2.IMREAD_UNCHANGED), cv2.COLOR_BGR2RGB)) for img_dir in imgs_dirs]
@@ -30,8 +30,8 @@ class DataProcessor():
 
     def mask_processor(self, mask_folder, img_resolution):
         masks_path = os.path.join(self.root_path, mask_folder)
-        masks_dirs_l = sorted(os.listdir(os.path.join(masks_path, "leftMask"))[:16])
-        masks_dirs_r = sorted(os.listdir(os.path.join(masks_path, "rightMask"))[:16])
+        masks_dirs_l = sorted(os.listdir(os.path.join(masks_path, "leftMask"))[:100])
+        masks_dirs_r = sorted(os.listdir(os.path.join(masks_path, "rightMask"))[:100])
         print(masks_dirs_l)
         print(masks_dirs_r)
 
