@@ -4,6 +4,7 @@
 # from .utils.metrics import *
 from utils.config import *
 from utils.metrics import *
+from utils.losses import *
 
 def train_fn(train_loader, val_loader, cfg):
     
@@ -27,7 +28,10 @@ def train_fn(train_loader, val_loader, cfg):
             optimizer.zero_grad()
             outputs = model(images)
 
-            loss = criterion(outputs, labels) 
+            # loss = criterion(outputs, labels) 
+            dice = dice_loss(outputs, labels)
+            bce = criterion(outputs, labels)
+            loss = dice + bce
             loss.backward()
             optimizer.step()
 

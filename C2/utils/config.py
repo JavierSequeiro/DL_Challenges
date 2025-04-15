@@ -8,10 +8,9 @@ class Config:
     model = ResUNet1()
     # model = models.resnet18(pretrained=True)
     loss = nn.BCEWithLogitsLoss()
-    # loss = nn.BCELoss()
     optimizer = optim.AdamW(params=model.parameters(), lr=1e-3,weight_decay=1e-5)
 
-    num_epochs = 20
+    num_epochs = 40
     batch_size = 4
     train_size = 0.8
     val_size = (1 - train_size)/2
